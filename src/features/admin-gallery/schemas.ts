@@ -16,6 +16,16 @@ export type GalleryUploadInput = {
   isPublished: boolean;
 };
 
+export type GalleryUpdateInput = {
+  id: string;
+  file: File | null;
+  title: string;
+  category: string;
+  alt: string;
+  sortOrder: number;
+  isPublished: boolean;
+};
+
 export type GalleryUploadValidationResult =
   | {
       data: GalleryUploadInput;
@@ -25,6 +35,21 @@ export type GalleryUploadValidationResult =
       error:
         | "missing-fields"
         | "missing-file"
+        | "invalid-file-type"
+        | "file-too-large"
+        | "invalid-sort-order";
+      success: false;
+    };
+
+export type GalleryUpdateValidationResult =
+  | {
+      data: GalleryUpdateInput;
+      success: true;
+    }
+  | {
+      error:
+        | "missing-fields"
+        | "missing-item"
         | "invalid-file-type"
         | "file-too-large"
         | "invalid-sort-order";
@@ -67,23 +92,31 @@ function getImageFile(formData: FormData) {
   return file;
 }
 
-export function validateGalleryUploadForm(
-  formData: FormData,
-): GalleryUploadValidationResult {
-  const file = getImageFile(formData);
-
-  if (!file) {
-    return { error: "missing-file", success: false };
-  }
-
+function validateImageFile(file: File) {
   if (!ACCEPTED_IMAGE_TYPES.has(file.type)) {
-    return { error: "invalid-file-type", success: false };
+    return "invalid-file-type";
   }
 
   if (file.size > MAX_IMAGE_SIZE_BYTES) {
-    return { error: "file-too-large", success: false };
+    return "file-too-large";
   }
 
+  return null;
+}
+
+type GalleryFieldsValidationResult =
+  | {
+      data: Omit<GalleryUploadInput, "file">;
+      success: true;
+    }
+  | {
+      error: "missing-fields" | "invalid-sort-order";
+      success: false;
+    };
+
+function validateGalleryFormFields(
+  formData: FormData,
+): GalleryFieldsValidationResult {
   const title = getRequiredText(formData, "title");
   const category = getRequiredText(formData, "category");
   const alt = getRequiredText(formData, "alt");
@@ -102,10 +135,74 @@ export function validateGalleryUploadForm(
     data: {
       alt,
       category,
-      file,
       isPublished: formData.get("is_published") === "on",
       sortOrder,
       title,
+    },
+    success: true,
+  };
+}
+
+export function validateGalleryUploadForm(
+  formData: FormData,
+): GalleryUploadValidationResult {
+  const file = getImageFile(formData);
+
+  if (!file) {
+    return { error: "missing-file", success: false };
+  }
+
+  const imageError = validateImageFile(file);
+
+  if (imageError) {
+    return { error: imageError, success: false };
+  }
+
+  const fields = validateGalleryFormFields(formData);
+
+  if (!fields.success) {
+    return { error: fields.error, success: false };
+  }
+
+  return {
+    data: {
+      file,
+      ...fields.data,
+    },
+    success: true,
+  };
+}
+
+export function validateGalleryUpdateForm(
+  formData: FormData,
+): GalleryUpdateValidationResult {
+  const id = getRequiredText(formData, "id");
+
+  if (!id) {
+    return { error: "missing-item", success: false };
+  }
+
+  const file = getImageFile(formData);
+
+  if (file) {
+    const imageError = validateImageFile(file);
+
+    if (imageError) {
+      return { error: imageError, success: false };
+    }
+  }
+
+  const fields = validateGalleryFormFields(formData);
+
+  if (!fields.success) {
+    return { error: fields.error, success: false };
+  }
+
+  return {
+    data: {
+      file,
+      id,
+      ...fields.data,
     },
     success: true,
   };
