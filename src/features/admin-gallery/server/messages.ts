@@ -28,7 +28,7 @@ const UPLOAD_MESSAGES = new Map<string, AdminMessage>([
   [
     "success",
     {
-      text: "Imagem cadastrada com sucesso.",
+      text: "Imagens cadastradas com sucesso.",
       variant: "success",
     },
   ],
@@ -42,7 +42,7 @@ const UPLOAD_MESSAGES = new Map<string, AdminMessage>([
   [
     "missing-file",
     {
-      text: "Selecione uma imagem para enviar.",
+      text: "Selecione pelo menos uma imagem para enviar.",
       variant: "error",
     },
   ],

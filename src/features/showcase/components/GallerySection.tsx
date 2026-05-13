@@ -1,5 +1,5 @@
-import Image from "next/image";
 import type { GalleryItem } from "@/features/showcase/types";
+import { GalleryItemCarousel } from "@/features/showcase/components/GalleryItemCarousel";
 
 type GallerySectionProps = {
   items: GalleryItem[];
@@ -25,21 +25,7 @@ export function GallerySection({ items }: GallerySectionProps) {
               className="group overflow-hidden rounded-lg border border-[#202020] bg-[#171717] shadow-[0_18px_50px_rgba(0,0,0,0.25)]"
               key={item.id}
             >
-              <div className="relative aspect-square overflow-hidden">
-                <Image
-                  alt={item.alt}
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
-                  height={760}
-                  src={item.imageSrc}
-                  width={760}
-                />
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/78 to-transparent p-5">
-                  <p className="text-xs font-bold uppercase tracking-normal text-[var(--accent-soft)]">
-                    {item.category}
-                  </p>
-                  <h3 className="mt-1 text-lg font-bold text-white">{item.title}</h3>
-                </div>
-              </div>
+              <GalleryItemCarousel item={item} />
             </article>
           ))}
         </div>

@@ -8,7 +8,7 @@ const ACCEPTED_IMAGE_TYPES = new Set([
 ]);
 
 export type GalleryUploadInput = {
-  file: File;
+  files: File[];
   title: string;
   category: string;
   alt: string;
@@ -18,7 +18,7 @@ export type GalleryUploadInput = {
 
 export type GalleryUpdateInput = {
   id: string;
-  file: File | null;
+  files: File[];
   title: string;
   category: string;
   alt: string;
@@ -82,14 +82,10 @@ function getSortOrder(formData: FormData) {
   return numberValue;
 }
 
-function getImageFile(formData: FormData) {
-  const file = formData.get("image");
-
-  if (!(file instanceof File) || file.size === 0) {
-    return null;
-  }
-
-  return file;
+function getImageFiles(formData: FormData) {
+  return formData
+    .getAll("images")
+    .filter((file): file is File => file instanceof File && file.size > 0);
 }
 
 function validateImageFile(file: File) {
@@ -106,7 +102,7 @@ function validateImageFile(file: File) {
 
 type GalleryFieldsValidationResult =
   | {
-      data: Omit<GalleryUploadInput, "file">;
+      data: Omit<GalleryUploadInput, "files">;
       success: true;
     }
   | {
@@ -146,13 +142,13 @@ function validateGalleryFormFields(
 export function validateGalleryUploadForm(
   formData: FormData,
 ): GalleryUploadValidationResult {
-  const file = getImageFile(formData);
+  const files = getImageFiles(formData);
 
-  if (!file) {
+  if (files.length === 0) {
     return { error: "missing-file", success: false };
   }
 
-  const imageError = validateImageFile(file);
+  const imageError = files.map(validateImageFile).find(Boolean);
 
   if (imageError) {
     return { error: imageError, success: false };
@@ -166,7 +162,7 @@ export function validateGalleryUploadForm(
 
   return {
     data: {
-      file,
+      files,
       ...fields.data,
     },
     success: true,
@@ -182,10 +178,10 @@ export function validateGalleryUpdateForm(
     return { error: "missing-item", success: false };
   }
 
-  const file = getImageFile(formData);
+  const files = getImageFiles(formData);
 
-  if (file) {
-    const imageError = validateImageFile(file);
+  if (files.length > 0) {
+    const imageError = files.map(validateImageFile).find(Boolean);
 
     if (imageError) {
       return { error: imageError, success: false };
@@ -200,7 +196,7 @@ export function validateGalleryUpdateForm(
 
   return {
     data: {
-      file,
+      files,
       id,
       ...fields.data,
     },

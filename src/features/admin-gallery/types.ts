@@ -12,7 +12,13 @@ export type AdminGalleryItem = {
   alt: string;
   imagePath: string;
   imageSrc: string;
+  images: AdminGalleryItemImage[];
   sortOrder: number;
   isPublished: boolean;
   createdAt: string;
+};
+
+export type AdminGalleryItemImage = {
+  imagePath: string;
+  imageSrc: string;
 };

@@ -4,4 +4,10 @@ export type GalleryItem = {
   imageSrc: string;
   alt: string;
   category: string;
+  images: GalleryItemImage[];
+};
+
+export type GalleryItemImage = {
+  imagePath: string;
+  imageSrc: string;
 };

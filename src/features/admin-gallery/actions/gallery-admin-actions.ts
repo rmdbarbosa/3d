@@ -24,14 +24,61 @@ function redirectToAdminWithParam(paramName: string, paramValue: string): never 
 }
 
 function getStorageFilePath(imagePath: string) {
-  return imagePath
-    .trim()
-    .replace(new RegExp(`^${GALLERY_BUCKET_NAME}/`), "");
+  const normalizedImagePath = imagePath.trim();
+
+  if (
+    normalizedImagePath.startsWith("https://") ||
+    normalizedImagePath.startsWith("http://")
+  ) {
+    return null;
+  }
+
+  return normalizedImagePath.replace(new RegExp(`^${GALLERY_BUCKET_NAME}/`), "");
 }
 
 function revalidateGalleryPages() {
   revalidatePath("/");
   revalidatePath(ADMIN_GALLERY_PATH);
+}
+
+function getUniqueStorageFilePaths(imagePaths: string[]) {
+  const storageFilePaths = imagePaths
+    .map(getStorageFilePath)
+    .filter((imagePath): imagePath is string => Boolean(imagePath));
+
+  return Array.from(new Set(storageFilePaths));
+}
+
+async function uploadGalleryFiles(
+  supabase: NonNullable<ReturnType<typeof createSupabaseAdminClient>>,
+  files: File[],
+) {
+  const uploadedFileNames: string[] = [];
+
+  for (const file of files) {
+    const storageFileName = createGalleryStorageFileName(file);
+
+    const { error: uploadError } = await supabase.storage
+      .from(GALLERY_BUCKET_NAME)
+      .upload(storageFileName, file, {
+        contentType: file.type,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error("Failed to upload gallery image to Supabase", uploadError);
+
+      if (uploadedFileNames.length > 0) {
+        await supabase.storage.from(GALLERY_BUCKET_NAME).remove(uploadedFileNames);
+      }
+
+      return { error: "storage-error" as const, fileNames: [] };
+    }
+
+    uploadedFileNames.push(storageFileName);
+  }
+
+  return { error: null, fileNames: uploadedFileNames };
 }
 
 export async function loginAdmin(formData: FormData) {
@@ -73,34 +120,51 @@ export async function createGalleryItem(formData: FormData) {
     redirectToAdminWithParam("upload", "missing-config");
   }
 
-  const { alt, category, file, isPublished, sortOrder, title } =
+  const { alt, category, files, isPublished, sortOrder, title } =
     validationResult.data;
-  const storageFileName = createGalleryStorageFileName(file);
+  const uploadResult = await uploadGalleryFiles(supabase, files);
 
-  const { error: uploadError } = await supabase.storage
-    .from(GALLERY_BUCKET_NAME)
-    .upload(storageFileName, file, {
-      contentType: file.type,
-      upsert: false,
-    });
-
-  if (uploadError) {
-    console.error("Failed to upload gallery image to Supabase", uploadError);
+  if (uploadResult.error) {
     redirectToAdminWithParam("upload", "storage-error");
   }
 
-  const { error: insertError } = await supabase.from("gallery_items").insert({
-    alt,
-    category,
-    image_path: `${GALLERY_BUCKET_NAME}/${storageFileName}`,
-    is_published: isPublished,
-    sort_order: sortOrder,
-    title,
-  });
+  const imagePaths = uploadResult.fileNames.map(
+    (fileName) => `${GALLERY_BUCKET_NAME}/${fileName}`,
+  );
 
-  if (insertError) {
+  const { data: newItem, error: insertError } = await supabase
+    .from("gallery_items")
+    .insert({
+      alt,
+      category,
+      image_path: imagePaths[0],
+      is_published: isPublished,
+      sort_order: sortOrder,
+      title,
+    })
+    .select("id")
+    .single();
+
+  if (insertError || !newItem) {
     console.error("Failed to create gallery item in Supabase", insertError);
-    await supabase.storage.from(GALLERY_BUCKET_NAME).remove([storageFileName]);
+    await supabase.storage.from(GALLERY_BUCKET_NAME).remove(uploadResult.fileNames);
+    redirectToAdminWithParam("upload", "database-error");
+  }
+
+  const galleryItemImages = imagePaths.map((imagePath, imageIndex) => ({
+    gallery_item_id: newItem.id,
+    image_path: imagePath,
+    sort_order: imageIndex,
+  }));
+
+  const { error: imagesInsertError } = await supabase
+    .from("gallery_item_images")
+    .insert(galleryItemImages);
+
+  if (imagesInsertError) {
+    console.error("Failed to create gallery item images in Supabase", imagesInsertError);
+    await supabase.from("gallery_items").delete().eq("id", newItem.id);
+    await supabase.storage.from(GALLERY_BUCKET_NAME).remove(uploadResult.fileNames);
     redirectToAdminWithParam("upload", "database-error");
   }
 
@@ -127,7 +191,7 @@ export async function updateGalleryItem(formData: FormData) {
     redirectToAdminWithParam("manage", "missing-config");
   }
 
-  const { alt, category, file, id, isPublished, sortOrder, title } =
+  const { alt, category, files, id, isPublished, sortOrder, title } =
     validationResult.data;
 
   const { data: existingItem, error: fetchError } = await supabase
@@ -141,33 +205,12 @@ export async function updateGalleryItem(formData: FormData) {
     redirectToAdminWithParam("manage", "not-found");
   }
 
-  let nextImagePath = existingItem.image_path;
-  let newStorageFileName: string | null = null;
-
-  if (file) {
-    newStorageFileName = createGalleryStorageFileName(file);
-
-    const { error: uploadError } = await supabase.storage
-      .from(GALLERY_BUCKET_NAME)
-      .upload(newStorageFileName, file, {
-        contentType: file.type,
-        upsert: false,
-      });
-
-    if (uploadError) {
-      console.error("Failed to upload replacement gallery image", uploadError);
-      redirectToAdminWithParam("manage", "storage-error");
-    }
-
-    nextImagePath = `${GALLERY_BUCKET_NAME}/${newStorageFileName}`;
-  }
-
   const { error: updateError } = await supabase
     .from("gallery_items")
     .update({
       alt,
       category,
-      image_path: nextImagePath,
+      image_path: existingItem.image_path,
       is_published: isPublished,
       sort_order: sortOrder,
       title,
@@ -176,24 +219,38 @@ export async function updateGalleryItem(formData: FormData) {
 
   if (updateError) {
     console.error("Failed to update gallery item in Supabase", updateError);
-
-    if (newStorageFileName) {
-      await supabase.storage.from(GALLERY_BUCKET_NAME).remove([
-        newStorageFileName,
-      ]);
-    }
-
     redirectToAdminWithParam("manage", "database-error");
   }
 
-  if (newStorageFileName) {
-    const oldStorageFilePath = getStorageFilePath(existingItem.image_path);
-    const { error: removeError } = await supabase.storage
-      .from(GALLERY_BUCKET_NAME)
-      .remove([oldStorageFilePath]);
+  if (files.length > 0) {
+    const uploadResult = await uploadGalleryFiles(supabase, files);
 
-    if (removeError) {
-      console.error("Failed to remove old gallery image from Supabase", removeError);
+    if (uploadResult.error) {
+      redirectToAdminWithParam("manage", "storage-error");
+    }
+
+    const { data: latestImage } = await supabase
+      .from("gallery_item_images")
+      .select("sort_order")
+      .eq("gallery_item_id", id)
+      .order("sort_order", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const nextSortOrder = (latestImage?.sort_order ?? -1) + 1;
+    const imageRows = uploadResult.fileNames.map((fileName, imageIndex) => ({
+      gallery_item_id: id,
+      image_path: `${GALLERY_BUCKET_NAME}/${fileName}`,
+      sort_order: nextSortOrder + imageIndex,
+    }));
+
+    const { error: imagesInsertError } = await supabase
+      .from("gallery_item_images")
+      .insert(imageRows);
+
+    if (imagesInsertError) {
+      console.error("Failed to append gallery item images in Supabase", imagesInsertError);
+      await supabase.storage.from(GALLERY_BUCKET_NAME).remove(uploadResult.fileNames);
+      redirectToAdminWithParam("manage", "database-error");
     }
   }
 
@@ -231,6 +288,16 @@ export async function deleteGalleryItem(formData: FormData) {
     redirectToAdminWithParam("manage", "not-found");
   }
 
+  const { data: existingImages, error: imagesFetchError } = await supabase
+    .from("gallery_item_images")
+    .select("image_path")
+    .eq("gallery_item_id", id.trim());
+
+  if (imagesFetchError) {
+    console.error("Failed to fetch gallery item images before delete", imagesFetchError);
+    redirectToAdminWithParam("manage", "database-error");
+  }
+
   const { error: deleteError } = await supabase
     .from("gallery_items")
     .delete()
@@ -241,10 +308,19 @@ export async function deleteGalleryItem(formData: FormData) {
     redirectToAdminWithParam("manage", "database-error");
   }
 
-  const storageFilePath = getStorageFilePath(existingItem.image_path);
+  const storageFilePaths = getUniqueStorageFilePaths([
+    existingItem.image_path,
+    ...(existingImages ?? []).map((image) => image.image_path),
+  ]);
+
+  if (storageFilePaths.length === 0) {
+    revalidateGalleryPages();
+    redirectToAdminWithParam("manage", "delete-success");
+  }
+
   const { error: removeError } = await supabase.storage
     .from(GALLERY_BUCKET_NAME)
-    .remove([storageFilePath]);
+    .remove(storageFilePaths);
 
   if (removeError) {
     console.error("Failed to remove gallery image from Supabase", removeError);

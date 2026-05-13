@@ -27,7 +27,7 @@ export function GalleryUploadForm({ message }: GalleryUploadFormProps) {
             Admin
           </p>
           <h1 className="text-3xl font-extrabold tracking-normal text-white">
-            Nova imagem da galeria
+            Novo item da galeria
           </h1>
         </div>
       </div>
@@ -53,13 +53,14 @@ export function GalleryUploadForm({ message }: GalleryUploadFormProps) {
               className="text-sm font-semibold text-[#f1e7e0]"
               htmlFor="image"
             >
-              Imagem
+              Imagens
             </label>
             <input
               accept="image/jpeg,image/png,image/webp,image/gif"
               className="mt-2 w-full rounded-lg border border-[#2c2c2c] bg-[#101010] px-4 py-3 text-sm text-white outline-none file:mr-4 file:rounded-lg file:border-0 file:bg-[var(--accent)] file:px-4 file:py-2 file:text-sm file:font-bold file:text-black focus:border-[var(--accent)]"
-              id="image"
-              name="image"
+              id="images"
+              multiple
+              name="images"
               required
               type="file"
             />
@@ -146,7 +147,7 @@ export function GalleryUploadForm({ message }: GalleryUploadFormProps) {
           type="submit"
         >
           <Upload aria-hidden="true" size={18} />
-          Enviar imagem
+          Enviar imagens
         </button>
       </form>
     </section>

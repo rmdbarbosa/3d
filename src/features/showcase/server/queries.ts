@@ -2,35 +2,60 @@ import type { GalleryItem } from "@/features/showcase/types";
 import { createSupabaseClient } from "@/lib/supabase/client";
 
 const GALLERY_BUCKET_NAME = "gallery";
+const SUPABASE_MISSING_TABLE_CODE = "PGRST205";
 
 const GALLERY_ITEMS: GalleryItem[] = [
   {
     id: "architectural-model",
-    title: "Modelo arquitetônico",
+    title: "Modelo arquitetonico",
     imageSrc: "/images/galeria-arquitetura.png",
-    alt: "Modelo arquitetônico impresso em 3D com iluminação quente",
+    alt: "Modelo arquitetonico impresso em 3D com iluminacao quente",
     category: "Arquitetura",
+    images: [
+      {
+        imagePath: "/images/galeria-arquitetura.png",
+        imageSrc: "/images/galeria-arquitetura.png",
+      },
+    ],
   },
   {
     id: "mechanical-parts",
-    title: "Peças funcionais",
+    title: "Pecas funcionais",
     imageSrc: "/images/galeria-pecas-mecanicas.png",
-    alt: "Conjunto de engrenagens e peças técnicas impressas em 3D",
-    category: "Protótipos",
+    alt: "Conjunto de engrenagens e pecas tecnicas impressas em 3D",
+    category: "Prototipos",
+    images: [
+      {
+        imagePath: "/images/galeria-pecas-mecanicas.png",
+        imageSrc: "/images/galeria-pecas-mecanicas.png",
+      },
+    ],
   },
   {
     id: "lattice-sphere",
     title: "Objeto decorativo",
     imageSrc: "/images/galeria-esfera-organica.png",
-    alt: "Esfera orgânica vazada impressa em 3D sobre fundo escuro",
+    alt: "Esfera organica vazada impressa em 3D sobre fundo escuro",
     category: "Design",
+    images: [
+      {
+        imagePath: "/images/galeria-esfera-organica.png",
+        imageSrc: "/images/galeria-esfera-organica.png",
+      },
+    ],
   },
   {
     id: "tabletop-miniature",
-    title: "Miniatura colecionável",
+    title: "Miniatura colecionavel",
     imageSrc: "/images/galeria-miniatura.png",
-    alt: "Miniatura detalhada de personagem para coleção impressa em 3D",
-    category: "Colecionáveis",
+    alt: "Miniatura detalhada de personagem para colecao impressa em 3D",
+    category: "Colecionaveis",
+    images: [
+      {
+        imagePath: "/images/galeria-miniatura.png",
+        imageSrc: "/images/galeria-miniatura.png",
+      },
+    ],
   },
   {
     id: "engineering-kit",
@@ -38,13 +63,25 @@ const GALLERY_ITEMS: GalleryItem[] = [
     imageSrc: "/images/galeria-kit-engenharia.png",
     alt: "Kit com engrenagens e conectores impressos em 3D na cor laranja",
     category: "Engenharia",
+    images: [
+      {
+        imagePath: "/images/galeria-kit-engenharia.png",
+        imageSrc: "/images/galeria-kit-engenharia.png",
+      },
+    ],
   },
   {
     id: "presentation-model",
-    title: "Maquete de apresentação",
+    title: "Maquete de apresentacao",
     imageSrc: "/images/galeria-maquete.png",
-    alt: "Maquete de apresentação impressa em 3D sobre base de madeira",
-    category: "Apresentação",
+    alt: "Maquete de apresentacao impressa em 3D sobre base de madeira",
+    category: "Apresentacao",
+    images: [
+      {
+        imagePath: "/images/galeria-maquete.png",
+        imageSrc: "/images/galeria-maquete.png",
+      },
+    ],
   },
 ];
 
@@ -56,7 +93,8 @@ function getGalleryImageUrl(
 
   if (
     normalizedImagePath.startsWith("https://") ||
-    normalizedImagePath.startsWith("http://")
+    normalizedImagePath.startsWith("http://") ||
+    normalizedImagePath.startsWith("/")
   ) {
     return normalizedImagePath;
   }
@@ -89,13 +127,45 @@ export async function getGalleryItems() {
     return GALLERY_ITEMS;
   }
 
+  const galleryItemIds = galleryItems.map((item) => item.id);
+  const { data: galleryImages, error: imagesError } =
+    galleryItemIds.length > 0
+      ? await supabase
+          .from("gallery_item_images")
+          .select("gallery_item_id,image_path,sort_order,created_at")
+          .in("gallery_item_id", galleryItemIds)
+          .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: true })
+      : { data: [], error: null };
+
+  if (imagesError && imagesError.code !== SUPABASE_MISSING_TABLE_CODE) {
+    console.error("Failed to fetch gallery item images from Supabase", imagesError);
+  }
+
   return galleryItems.map((item) => {
+    const itemImages = (galleryImages ?? [])
+      .filter((image) => image.gallery_item_id === item.id)
+      .map((image) => ({
+        imagePath: image.image_path,
+        imageSrc: getGalleryImageUrl(supabase, image.image_path),
+      }));
+    const images =
+      itemImages.length > 0
+        ? itemImages
+        : [
+            {
+              imagePath: item.image_path,
+              imageSrc: getGalleryImageUrl(supabase, item.image_path),
+            },
+          ];
+
     return {
       id: item.id,
       title: item.title,
-      imageSrc: getGalleryImageUrl(supabase, item.image_path),
+      imageSrc: images[0].imageSrc,
       alt: item.alt,
       category: item.category,
+      images,
     };
   });
 }

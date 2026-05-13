@@ -89,6 +89,10 @@ export function GalleryItemsManager({
                       {item.isPublished ? "Publicado" : "Oculto"}
                     </span>
                     <span className="rounded-md bg-[#232323] px-2 py-1 text-[#f1e7e0]">
+                      {item.images.length}{" "}
+                      {item.images.length === 1 ? "imagem" : "imagens"}
+                    </span>
+                    <span className="rounded-md bg-[#232323] px-2 py-1 text-[#f1e7e0]">
                       Ordem {item.sortOrder}
                     </span>
                   </div>
@@ -183,15 +187,16 @@ export function GalleryItemsManager({
                       <div className="sm:col-span-2">
                         <label
                           className="text-sm font-semibold text-[#f1e7e0]"
-                          htmlFor={`image-${item.id}`}
+                          htmlFor={`images-${item.id}`}
                         >
-                          Substituir imagem
+                          Adicionar imagens
                         </label>
                         <input
                           accept="image/jpeg,image/png,image/webp,image/gif"
                           className="mt-2 w-full rounded-lg border border-[#2c2c2c] bg-[#101010] px-4 py-3 text-sm text-white outline-none file:mr-4 file:rounded-lg file:border-0 file:bg-[var(--accent)] file:px-4 file:py-2 file:text-sm file:font-bold file:text-black focus:border-[var(--accent)]"
-                          id={`image-${item.id}`}
-                          name="image"
+                          id={`images-${item.id}`}
+                          multiple
+                          name="images"
                           type="file"
                         />
                       </div>

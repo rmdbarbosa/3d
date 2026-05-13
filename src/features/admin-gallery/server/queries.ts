@@ -2,6 +2,7 @@ import type { AdminGalleryItem } from "@/features/admin-gallery/types";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const GALLERY_BUCKET_NAME = "gallery";
+const SUPABASE_MISSING_TABLE_CODE = "PGRST205";
 
 function getGalleryImageUrl(
   supabase: NonNullable<ReturnType<typeof createSupabaseAdminClient>>,
@@ -11,7 +12,8 @@ function getGalleryImageUrl(
 
   if (
     normalizedImagePath.startsWith("https://") ||
-    normalizedImagePath.startsWith("http://")
+    normalizedImagePath.startsWith("http://") ||
+    normalizedImagePath.startsWith("/")
   ) {
     return normalizedImagePath;
   }
@@ -43,14 +45,46 @@ export async function getAdminGalleryItems(): Promise<AdminGalleryItem[]> {
     return [];
   }
 
+  const galleryItemIds = galleryItems.map((item) => item.id);
+  const { data: galleryImages, error: imagesError } =
+    galleryItemIds.length > 0
+      ? await supabase
+          .from("gallery_item_images")
+          .select("gallery_item_id,image_path,sort_order,created_at")
+          .in("gallery_item_id", galleryItemIds)
+          .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: true })
+      : { data: [], error: null };
+
+  if (imagesError && imagesError.code !== SUPABASE_MISSING_TABLE_CODE) {
+    console.error("Failed to fetch admin gallery item images from Supabase", imagesError);
+  }
+
   return galleryItems.map((item) => {
+    const itemImages = (galleryImages ?? [])
+      .filter((image) => image.gallery_item_id === item.id)
+      .map((image) => ({
+        imagePath: image.image_path,
+        imageSrc: getGalleryImageUrl(supabase, image.image_path),
+      }));
+    const images =
+      itemImages.length > 0
+        ? itemImages
+        : [
+            {
+              imagePath: item.image_path,
+              imageSrc: getGalleryImageUrl(supabase, item.image_path),
+            },
+          ];
+
     return {
       id: item.id,
       title: item.title,
       category: item.category,
       alt: item.alt,
       imagePath: item.image_path,
-      imageSrc: getGalleryImageUrl(supabase, item.image_path),
+      imageSrc: images[0].imageSrc,
+      images,
       sortOrder: item.sort_order,
       isPublished: item.is_published,
       createdAt: item.created_at,
