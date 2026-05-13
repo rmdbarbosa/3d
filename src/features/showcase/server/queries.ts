@@ -1,4 +1,7 @@
 import type { GalleryItem } from "@/features/showcase/types";
+import { createSupabaseClient } from "@/lib/supabase/client";
+
+const GALLERY_BUCKET_NAME = "gallery";
 
 const GALLERY_ITEMS: GalleryItem[] = [
   {
@@ -45,6 +48,54 @@ const GALLERY_ITEMS: GalleryItem[] = [
   },
 ];
 
+function getGalleryImageUrl(
+  supabase: NonNullable<ReturnType<typeof createSupabaseClient>>,
+  imagePath: string,
+) {
+  const normalizedImagePath = imagePath.trim();
+
+  if (
+    normalizedImagePath.startsWith("https://") ||
+    normalizedImagePath.startsWith("http://")
+  ) {
+    return normalizedImagePath;
+  }
+
+  const storagePath = normalizedImagePath.replace(
+    new RegExp(`^${GALLERY_BUCKET_NAME}/`),
+    "",
+  );
+
+  return supabase.storage.from(GALLERY_BUCKET_NAME).getPublicUrl(storagePath).data
+    .publicUrl;
+}
+
 export async function getGalleryItems() {
-  return GALLERY_ITEMS;
+  const supabase = createSupabaseClient();
+
+  if (!supabase) {
+    return GALLERY_ITEMS;
+  }
+
+  const { data: galleryItems, error } = await supabase
+    .from("gallery_items")
+    .select("id,title,category,alt,image_path")
+    .eq("is_published", true)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Failed to fetch gallery items from Supabase", error);
+    return GALLERY_ITEMS;
+  }
+
+  return galleryItems.map((item) => {
+    return {
+      id: item.id,
+      title: item.title,
+      imageSrc: getGalleryImageUrl(supabase, item.image_path),
+      alt: item.alt,
+      category: item.category,
+    };
+  });
 }
