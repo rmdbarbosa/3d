@@ -32,10 +32,10 @@ export function GalleryItemCarousel({ item }: GalleryItemCarouselProps) {
   }
 
   return (
-    <div className="relative aspect-square overflow-hidden">
+    <div className="relative aspect-[4/5] overflow-hidden bg-[#101010] sm:aspect-[3/4]">
       <Image
         alt={item.alt}
-        className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+        className="h-full w-full object-contain transition duration-500 group-hover:scale-[1.01]"
         height={760}
         src={activeImage.imageSrc}
         width={760}
