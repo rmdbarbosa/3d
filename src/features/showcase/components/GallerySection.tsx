@@ -7,9 +7,9 @@ type GallerySectionProps = {
 
 export function GallerySection({ items }: GallerySectionProps) {
   return (
-    <section className="bg-[#111111] px-5 py-20 sm:px-8 lg:py-28" id="galeria">
+    <section className="bg-[#111111] px-5 sm:px-8" id="galeria">
       <div className="mx-auto w-full max-w-7xl">
-        <div className="mx-auto max-w-2xl text-center">
+        {/* <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-extrabold tracking-normal text-white sm:text-4xl">
             Criado com precisão
           </h2>
@@ -17,9 +17,9 @@ export function GallerySection({ items }: GallerySectionProps) {
             Uma seleção de projetos recentes, mostrando detalhe, acabamento e
             qualidade em impressões personalizadas.
           </p>
-        </div>
+        </div> */}
 
-        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="my-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => (
             <article
               className="group overflow-hidden rounded-lg border border-[#202020] bg-[#171717] shadow-[0_18px_50px_rgba(0,0,0,0.25)]"

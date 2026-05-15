@@ -10,7 +10,7 @@ export async function ShowcasePage() {
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-      <SiteHeader />
+      {/* <SiteHeader /> */}
       <main>
         <HeroSection />
         <GallerySection items={galleryItems} />

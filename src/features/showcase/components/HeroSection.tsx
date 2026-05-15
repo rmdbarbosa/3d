@@ -1,44 +1,41 @@
 import Image from "next/image";
-import { WhatsAppButton } from "@/components/shared/WhatsAppButton";
+import Link from "next/link";
 import { WHATSAPP_URL } from "@/features/showcase/config";
+import { HeroLogo } from "@/features/showcase/components/HeroLogo";
 
 export function HeroSection() {
   return (
     <section
-      className="relative overflow-hidden border-b border-[#181818] bg-[#111111]"
+      className="relative flex min-h-[100svh] overflow-hidden border-b border-[#181818] bg-[#111111]"
       id="inicio"
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_28%,rgba(255,106,25,0.14),transparent_32%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent_42%)]" />
-      <div className="relative mx-auto grid min-h-[620px] w-full max-w-7xl items-center gap-12 px-5 py-16 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:py-20">
-        <div className="max-w-xl">
-          <p className="inline-flex rounded-full bg-[#3a251c] px-3 py-1 text-xs font-bold uppercase tracking-normal text-[#ffd3bf]">
-            Estúdio de criação 3D
-          </p>
-          <h1 className="mt-6 text-5xl font-extrabold leading-tight tracking-normal text-white sm:text-6xl">
-            Sua visão,
-            <span className="block text-[var(--accent-soft)]">
-              perfeitamente impressa.
-            </span>
-          </h1>
-          <p className="mt-6 max-w-lg text-lg leading-8 text-[#ead6cc]">
-            Transformamos ideias digitais em objetos reais. Impressão 3D de alta
-            precisão para criadores, colecionadores e projetos sob medida.
-          </p>
-          <div className="mt-9">
-            <WhatsAppButton href={WHATSAPP_URL} label="Solicitar impressão personalizada" />
-          </div>
-        </div>
+      <Image
+        alt="Símbolo da fourverticals 3D"
+        className="object-cover object-center"
+        fill
+        priority
+        sizes="100vw"
+        src="/images/heroBG.png"
+      />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.08)_0%,rgba(0,0,0,0.32)_58%,rgba(17,17,17,0.82)_100%)]" />
+      <div className="absolute inset-0 shadow-[inset_0_0_90px_28px_rgba(0,0,0,0.78),inset_0_0_220px_70px_rgba(0,0,0,0.42)] sm:shadow-[inset_0_0_130px_40px_rgba(0,0,0,0.8),inset_0_0_260px_86px_rgba(0,0,0,0.45)]" />
 
-        <div className="relative mx-auto w-full max-w-2xl">
-          <div className="overflow-hidden rounded-lg border border-[#171717] bg-[#080808] shadow-[0_30px_90px_rgba(0,0,0,0.45)]">
-            <Image
-              alt="Impressora 3D criando uma peça laranja com acabamento detalhado"
-              className="aspect-[1.12/1] h-auto w-full object-cover"
-              height={980}
-              priority
-              src="/images/hero-impressao-3d.png"
-              width={1100}
-            />
+      <div className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-center px-5 py-24 sm:px-8">
+        <div className="flex w-full max-w-3xl flex-col items-center text-center">
+          <HeroLogo />
+          <h1 className="text-4xl font-extrabold leading-tight tracking-normal text-white drop-shadow-[0_6px_26px_rgba(0,0,0,0.48)] sm:text-6xl">
+            Precisão em
+            <span className="text-[var(--accent-soft)]"> cada camada.</span>
+          </h1>
+          <div className="mt-5">
+            <Link
+              className="inline-flex min-h-10 items-center justify-center rounded-full bg-[var(--accent)] px-8 text-xs font-medium text-[#1d0c05] shadow-[0_16px_42px_rgba(255,106,25,0.34)] transition hover:bg-[#ff7d35]"
+              href={WHATSAPP_URL}
+              rel="noreferrer"
+              target="_blank"
+            >
+              Solicitar impressão personalizada
+            </Link>
           </div>
         </div>
       </div>
