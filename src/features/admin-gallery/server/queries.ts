@@ -50,7 +50,7 @@ export async function getAdminGalleryItems(): Promise<AdminGalleryItem[]> {
     galleryItemIds.length > 0
       ? await supabase
           .from("gallery_item_images")
-          .select("gallery_item_id,image_path,sort_order,created_at")
+          .select("id,gallery_item_id,image_path,sort_order,created_at")
           .in("gallery_item_id", galleryItemIds)
           .order("sort_order", { ascending: true })
           .order("created_at", { ascending: true })
@@ -64,16 +64,20 @@ export async function getAdminGalleryItems(): Promise<AdminGalleryItem[]> {
     const itemImages = (galleryImages ?? [])
       .filter((image) => image.gallery_item_id === item.id)
       .map((image) => ({
+        id: image.id,
         imagePath: image.image_path,
         imageSrc: getGalleryImageUrl(supabase, image.image_path),
+        sortOrder: image.sort_order,
       }));
     const images =
       itemImages.length > 0
         ? itemImages
         : [
             {
+              id: "",
               imagePath: item.image_path,
               imageSrc: getGalleryImageUrl(supabase, item.image_path),
+              sortOrder: 0,
             },
           ];
 

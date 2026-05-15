@@ -19,6 +19,8 @@ export type AdminGalleryItem = {
 };
 
 export type AdminGalleryItemImage = {
+  id: string;
   imagePath: string;
   imageSrc: string;
+  sortOrder: number;
 };

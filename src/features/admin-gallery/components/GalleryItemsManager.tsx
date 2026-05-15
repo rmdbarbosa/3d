@@ -68,42 +68,45 @@ export function GalleryItemsManager({
         </div>
       ) : (
         <div className="grid gap-5">
-          {items.map((item) => (
-            <article
-              className="rounded-lg border border-[#202020] bg-[#161616] p-4 shadow-[0_18px_50px_rgba(0,0,0,0.2)]"
-              key={item.id}
-            >
-              <div className="grid gap-5 lg:grid-cols-[220px_1fr]">
-                <div>
-                  <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-[#2c2c2c] bg-[#101010]">
-                    <Image
-                      alt={item.alt}
-                      className="object-cover"
-                      fill
-                      sizes="(min-width: 1024px) 220px, 100vw"
-                      src={item.imageSrc}
-                    />
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
-                    <span className="rounded-md bg-[#232323] px-2 py-1 text-[#f1e7e0]">
-                      {item.isPublished ? "Publicado" : "Oculto"}
-                    </span>
-                    <span className="rounded-md bg-[#232323] px-2 py-1 text-[#f1e7e0]">
-                      {item.images.length}{" "}
-                      {item.images.length === 1 ? "imagem" : "imagens"}
-                    </span>
-                    <span className="rounded-md bg-[#232323] px-2 py-1 text-[#f1e7e0]">
-                      Ordem {item.sortOrder}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-xs text-[#9d8f87]">
-                    Criado em {formatCreatedAt(item.createdAt)}
-                  </p>
-                </div>
+          {items.map((item) => {
+            const selectedCoverImageId = item.images[0]?.id ?? "";
 
-                <div className="grid gap-4">
-                  <form action={updateGalleryItem}>
-                    <input name="id" type="hidden" value={item.id} />
+            return (
+              <article
+                className="rounded-lg border border-[#202020] bg-[#161616] p-4 shadow-[0_18px_50px_rgba(0,0,0,0.2)]"
+                key={item.id}
+              >
+                <div className="grid gap-5 lg:grid-cols-[220px_1fr]">
+                  <div>
+                    <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-[#2c2c2c] bg-[#101010]">
+                      <Image
+                        alt={item.alt}
+                        className="object-cover"
+                        fill
+                        sizes="(min-width: 1024px) 220px, 100vw"
+                        src={item.imageSrc}
+                      />
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
+                      <span className="rounded-md bg-[#232323] px-2 py-1 text-[#f1e7e0]">
+                        {item.isPublished ? "Publicado" : "Oculto"}
+                      </span>
+                      <span className="rounded-md bg-[#232323] px-2 py-1 text-[#f1e7e0]">
+                        {item.images.length}{" "}
+                        {item.images.length === 1 ? "imagem" : "imagens"}
+                      </span>
+                      <span className="rounded-md bg-[#232323] px-2 py-1 text-[#f1e7e0]">
+                        Ordem {item.sortOrder}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs text-[#9d8f87]">
+                      Criado em {formatCreatedAt(item.createdAt)}
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4">
+                    <form action={updateGalleryItem}>
+                      <input name="id" type="hidden" value={item.id} />
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
@@ -185,6 +188,46 @@ export function GalleryItemsManager({
                       </label>
 
                       <div className="sm:col-span-2">
+                        <p className="text-sm font-semibold text-[#f1e7e0]">
+                          Imagem principal
+                        </p>
+                        <div className="mt-2 grid gap-3 sm:grid-cols-3">
+                          {item.images.map((image, imageIndex) => (
+                            <label
+                              className="group cursor-pointer rounded-lg border border-[#2c2c2c] bg-[#101010] p-2 text-xs font-semibold text-[#f1e7e0] transition focus-within:border-[var(--accent)] hover:border-[var(--accent)]"
+                              key={image.id || image.imagePath}
+                            >
+                              <input
+                                className="peer mb-2 size-4 accent-[var(--accent)]"
+                                defaultChecked={
+                                  image.id === selectedCoverImageId
+                                }
+                                name="cover_image_id"
+                                required={imageIndex === 0}
+                                type="radio"
+                                value={image.id}
+                              />
+                              <span className="relative block aspect-[4/3] overflow-hidden rounded-md border border-[#2c2c2c] bg-[#0d0d0d] peer-checked:border-[var(--accent)]">
+                                <Image
+                                  alt={item.alt}
+                                  className="object-cover"
+                                  fill
+                                  sizes="(min-width: 1024px) 180px, 45vw"
+                                  src={image.imageSrc}
+                                />
+                              </span>
+                              <span className="mt-2 flex items-center justify-between gap-2">
+                                <span>Imagem {imageIndex + 1}</span>
+                                <span className="rounded-md bg-[#232323] px-2 py-1 text-[var(--accent-soft)] peer-checked:bg-[var(--accent)] peer-checked:text-black">
+                                  Principal
+                                </span>
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="sm:col-span-2">
                         <label
                           className="text-sm font-semibold text-[#f1e7e0]"
                           htmlFor={`images-${item.id}`}
@@ -209,16 +252,17 @@ export function GalleryItemsManager({
                       <Save aria-hidden="true" size={18} />
                       Salvar alteracoes
                     </button>
-                  </form>
+                    </form>
 
-                  <form action={deleteGalleryItem}>
-                    <input name="id" type="hidden" value={item.id} />
-                    <DeleteGalleryItemButton itemTitle={item.title} />
-                  </form>
+                    <form action={deleteGalleryItem}>
+                      <input name="id" type="hidden" value={item.id} />
+                      <DeleteGalleryItemButton itemTitle={item.title} />
+                    </form>
+                  </div>
                 </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
       )}
     </section>

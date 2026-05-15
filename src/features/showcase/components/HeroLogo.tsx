@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import { HashLink } from "@/components/shared/HashLink";
 
 const TARGET_TOP = 20;
 const TARGET_LEFT = 20;
@@ -95,15 +96,17 @@ export function HeroLogo() {
       className="mb-6 h-[72px] w-[72px] sm:h-[88px] sm:w-[88px]"
       ref={logoSlotRef}
     >
-      <Image
-        alt="fourverticals 3D"
-        className="rounded-sm object-cover shadow-[0_18px_46px_rgba(0,0,0,0.58),0_0_36px_rgba(255,255,255,0.12)]"
-        height={88}
-        priority
-        src="/images/logo.webp"
-        style={logoStyle ?? undefined}
-        width={88}
-      />
+      <HashLink aria-label="Voltar ao início" href="#inicio">
+        <Image
+          alt="fourverticals 3D"
+          className="rounded-sm object-cover shadow-[0_18px_46px_rgba(0,0,0,0.58),0_0_36px_rgba(255,255,255,0.12)]"
+          height={88}
+          priority
+          src="/images/logo.webp"
+          style={logoStyle ?? undefined}
+          width={88}
+        />
+      </HashLink>
     </div>
   );
 }

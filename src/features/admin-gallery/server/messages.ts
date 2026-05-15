@@ -120,6 +120,13 @@ const MANAGE_MESSAGES = new Map<string, AdminMessage>([
     },
   ],
   [
+    "missing-cover-image",
+    {
+      text: "Selecione uma imagem principal valida.",
+      variant: "error",
+    },
+  ],
+  [
     "not-found",
     {
       text: "Item nÃ£o encontrado. Atualize a pÃ¡gina e tente novamente.",

@@ -17,6 +17,7 @@ export type GalleryUploadInput = {
 };
 
 export type GalleryUpdateInput = {
+  coverImageId: string;
   id: string;
   files: File[];
   title: string;
@@ -49,6 +50,7 @@ export type GalleryUpdateValidationResult =
   | {
       error:
         | "missing-fields"
+        | "missing-cover-image"
         | "missing-item"
         | "invalid-file-type"
         | "file-too-large"
@@ -173,9 +175,14 @@ export function validateGalleryUpdateForm(
   formData: FormData,
 ): GalleryUpdateValidationResult {
   const id = getRequiredText(formData, "id");
+  const coverImageId = getRequiredText(formData, "cover_image_id");
 
   if (!id) {
     return { error: "missing-item", success: false };
+  }
+
+  if (!coverImageId) {
+    return { error: "missing-cover-image", success: false };
   }
 
   const files = getImageFiles(formData);
@@ -196,6 +203,7 @@ export function validateGalleryUpdateForm(
 
   return {
     data: {
+      coverImageId,
       files,
       id,
       ...fields.data,

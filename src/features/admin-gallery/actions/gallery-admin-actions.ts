@@ -19,6 +19,10 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 const ADMIN_GALLERY_PATH = "/admin/galeria";
 const GALLERY_BUCKET_NAME = "gallery";
 
+type SupabaseAdminClient = NonNullable<
+  ReturnType<typeof createSupabaseAdminClient>
+>;
+
 function redirectToAdminWithParam(paramName: string, paramValue: string): never {
   redirect(`${ADMIN_GALLERY_PATH}?${paramName}=${paramValue}`);
 }
@@ -50,7 +54,7 @@ function getUniqueStorageFilePaths(imagePaths: string[]) {
 }
 
 async function uploadGalleryFiles(
-  supabase: NonNullable<ReturnType<typeof createSupabaseAdminClient>>,
+  supabase: SupabaseAdminClient,
   files: File[],
 ) {
   const uploadedFileNames: string[] = [];
@@ -79,6 +83,54 @@ async function uploadGalleryFiles(
   }
 
   return { error: null, fileNames: uploadedFileNames };
+}
+
+async function updateGalleryCoverImage(
+  supabase: SupabaseAdminClient,
+  galleryItemId: string,
+  coverImageId: string,
+) {
+  const { data: images, error: imagesFetchError } = await supabase
+    .from("gallery_item_images")
+    .select("id,image_path,sort_order,created_at")
+    .eq("gallery_item_id", galleryItemId)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (imagesFetchError) {
+    console.error("Failed to fetch gallery item images before update", imagesFetchError);
+    return { error: "database-error" as const, imagePath: null };
+  }
+
+  const galleryImages = images ?? [];
+  const coverImage = galleryImages.find((image) => image.id === coverImageId);
+
+  if (!coverImage) {
+    return { error: "missing-cover-image" as const, imagePath: null };
+  }
+
+  const orderedImages = [
+    coverImage,
+    ...galleryImages.filter((image) => image.id !== coverImageId),
+  ];
+
+  for (const [imageIndex, image] of orderedImages.entries()) {
+    if (image.sort_order === imageIndex) {
+      continue;
+    }
+
+    const { error: imageUpdateError } = await supabase
+      .from("gallery_item_images")
+      .update({ sort_order: imageIndex })
+      .eq("id", image.id);
+
+    if (imageUpdateError) {
+      console.error("Failed to update gallery image sort order", imageUpdateError);
+      return { error: "database-error" as const, imagePath: null };
+    }
+  }
+
+  return { error: null, imagePath: coverImage.image_path };
 }
 
 export async function loginAdmin(formData: FormData) {
@@ -191,18 +243,31 @@ export async function updateGalleryItem(formData: FormData) {
     redirectToAdminWithParam("manage", "missing-config");
   }
 
-  const { alt, category, files, id, isPublished, sortOrder, title } =
-    validationResult.data;
+  const {
+    alt,
+    category,
+    coverImageId,
+    files,
+    id,
+    isPublished,
+    sortOrder,
+    title,
+  } = validationResult.data;
 
-  const { data: existingItem, error: fetchError } = await supabase
-    .from("gallery_items")
-    .select("image_path")
-    .eq("id", id)
-    .single();
+  const coverUpdateResult = await updateGalleryCoverImage(
+    supabase,
+    id,
+    coverImageId,
+  );
 
-  if (fetchError || !existingItem) {
-    console.error("Failed to fetch gallery item before update", fetchError);
-    redirectToAdminWithParam("manage", "not-found");
+  if (coverUpdateResult.error) {
+    redirectToAdminWithParam("manage", coverUpdateResult.error);
+  }
+
+  const coverImagePath = coverUpdateResult.imagePath;
+
+  if (!coverImagePath) {
+    redirectToAdminWithParam("manage", "database-error");
   }
 
   const { error: updateError } = await supabase
@@ -210,7 +275,7 @@ export async function updateGalleryItem(formData: FormData) {
     .update({
       alt,
       category,
-      image_path: existingItem.image_path,
+      image_path: coverImagePath,
       is_published: isPublished,
       sort_order: sortOrder,
       title,
