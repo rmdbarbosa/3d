@@ -1,8 +1,10 @@
 import { SiteFooter } from "@/components/shared/SiteFooter";
-import { SiteHeader } from "@/components/shared/SiteHeader";
 import { CtaSection } from "@/features/showcase/components/CtaSection";
+import { FaqSection } from "@/features/showcase/components/FaqSection";
 import { GallerySection } from "@/features/showcase/components/GallerySection";
 import { HeroSection } from "@/features/showcase/components/HeroSection";
+import { SeoStructuredData } from "@/features/showcase/components/SeoStructuredData";
+import { ServicesSection } from "@/features/showcase/components/ServicesSection";
 import { getGalleryItems } from "@/features/showcase/server/queries";
 
 export async function ShowcasePage() {
@@ -10,10 +12,12 @@ export async function ShowcasePage() {
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-      {/* <SiteHeader /> */}
+      <SeoStructuredData />
       <main>
         <HeroSection />
+        <ServicesSection />
         <GallerySection items={galleryItems} />
+        <FaqSection />
         <CtaSection />
       </main>
       <SiteFooter />
