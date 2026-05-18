@@ -19,6 +19,9 @@ export const metadata: Metadata = {
     template: `%s | ${BUSINESS_NAME}`,
   },
   description: SEO_DESCRIPTION,
+  verification: {
+    google: "GhgUXCcXYtc78hM2V44fx-MFloox2vyg6RJQgVNJ3Xs",
+  },
   applicationName: BUSINESS_NAME,
   authors: [{ name: BUSINESS_NAME }],
   creator: BUSINESS_NAME,
